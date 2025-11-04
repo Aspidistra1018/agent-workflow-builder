@@ -1,38 +1,51 @@
 <template>
   <a-layout-footer class="footer">
-    <div class="footer-content">
-      <p class="copyright">
+    <div class="footer-inner">
+      <span>© {{ currentYear }} 鱼皮应用生成 · 让更多想法快速实现</span>
+      <a-space :size="12">
         <a
           href="https://www.codefather.cn"
           target="_blank"
           rel="noopener noreferrer"
-          class="author-link"
+          class="footer-link"
         >
-          编程导航原创项目 by 程序员鱼皮
+          编程导航
         </a>
-      </p>
+        <a
+          href="https://github.com/liyupi"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="footer-link"
+        >
+          GitHub
+        </a>
+      </a-space>
     </div>
   </a-layout-footer>
 </template>
 
 <script setup lang="ts">
-// 无需额外的响应式数据
+const currentYear = new Date().getFullYear()
 </script>
 
 <style scoped>
 .footer {
-  background: #efefef;
+  background: linear-gradient(90deg, rgba(22, 119, 255, 0.12), rgba(111, 207, 255, 0.12));
+  padding: 24px 48px;
   text-align: center;
-  padding: 20px;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
 }
 
-.copyright {
-  margin: 0;
-  color: #666;
+.footer-inner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  color: rgba(0, 0, 0, 0.55);
   font-size: 14px;
+}
+
+.footer-link {
+  color: #1677ff;
 }
 </style>

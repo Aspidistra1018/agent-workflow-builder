@@ -3,6 +3,7 @@ package com.yupi.yuaicodemother.service;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
 import com.yupi.yuaicodemother.model.dto.UserQueryRequest;
+import com.yupi.yuaicodemother.model.dto.UserUpdateRequest;
 import com.yupi.yuaicodemother.model.entity.User;
 import com.yupi.yuaicodemother.model.vo.LoginUserVO;
 import com.yupi.yuaicodemother.model.vo.UserVO;
@@ -91,4 +92,11 @@ public interface UserService extends IService<User> {
      * @return 加密后的用户密码
      */
     String getEncryptPassword(String userPassword);
+
+    /**
+     * 更新用户信息
+     *
+     * @param userUpdateRequest
+     */
+    void updateInfo(UserUpdateRequest userUpdateRequest);
 }

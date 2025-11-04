@@ -69,6 +69,12 @@ public class UserController {
         return ResultUtils.success(loginUserVO);
     }
 
+    /**
+     * 获取用户信息
+     *
+     * @param request
+     * @return
+     */
     @GetMapping("/get/login")
     public BaseResponse<LoginUserVO> getLoginUser(HttpServletRequest request) {
         User loginUser = userService.getLoginUser(request);
@@ -89,7 +95,7 @@ public class UserController {
     }
 
     /**
-     * 创建用户
+     * 创建用户（仅管理员）
      */
     @PostMapping("/add")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
@@ -129,7 +135,7 @@ public class UserController {
     }
 
     /**
-     * 删除用户
+     * 删除用户（仅管理员）
      */
     @PostMapping("/delete")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
@@ -142,7 +148,7 @@ public class UserController {
     }
 
     /**
-     * 更新用户
+     * 更新用户（仅管理员）
      */
     @PostMapping("/update")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
@@ -175,5 +181,11 @@ public class UserController {
         List<UserVO> userVOList = userService.getUserVOList(userPage.getRecords());
         userVOPage.setRecords(userVOList);
         return ResultUtils.success(userVOPage);
+    }
+
+    @PostMapping("/update/info")
+    public BaseResponse<?> updateInfo(@RequestBody UserUpdateRequest userUpdateRequest) {
+        userService.updateInfo(userUpdateRequest);
+        return ResultUtils.success(null);
     }
 }

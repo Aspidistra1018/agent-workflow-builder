@@ -1,101 +1,252 @@
 <template>
   <a-layout-header class="header">
-    <a-row :wrap="false">
-      <!-- 左侧：Logo和标题 -->
-      <a-col flex="200px">
-        <RouterLink to="/">
-          <div class="header-left">
-            <img class="logo" src="@/assets/logo.png" alt="Logo" />
-            <h1 class="site-title">鱼皮应用生成</h1>
-          </div>
-        </RouterLink>
-      </a-col>
-      <!-- 中间：导航菜单 -->
-      <a-col flex="auto">
-        <a-menu
-          v-model:selectedKeys="selectedKeys"
-          mode="horizontal"
-          :items="menuItems"
-          @click="handleMenuClick"
-        />
-      </a-col>
-      <!-- 右侧：用户操作区域 -->
-      <a-col>
-        <div class="user-login-status">
-          <a-button type="primary">登录</a-button>
+    <div class="header-inner">
+      <RouterLink to="/" class="brand">
+        <img class="brand-logo" src="@/assets/logo.png" alt="logo" />
+        <div class="brand-text">
+          <span class="brand-title">鱼皮应用生成</span>
+          <span class="brand-subtitle">让灵感快速落地</span>
         </div>
-      </a-col>
-    </a-row>
+      </RouterLink>
+
+      <a-menu
+        v-model:selectedKeys="selectedKeys"
+        mode="horizontal"
+        :items="menuItems"
+        class="nav-menu"
+        @click="handleMenuClick"
+      />
+
+      <div class="header-actions">
+        <template v-if="isLoggedIn">
+          <a-space :size="12" align="center">
+            <a-tag v-if="isAdmin" color="red" bordered>管理员</a-tag>
+            <a-dropdown placement="bottomRight">
+              <a-space :size="8" class="user-entry" @click="handleGoProfile">
+                <a-avatar :size="36" class="user-avatar">
+                  {{ (loginUser?.userName || loginUser?.userAccount || '鱼')?.slice(0, 1) }}
+                </a-avatar>
+                <div class="user-meta">
+                  <span class="user-name">{{ loginUser?.userName || loginUser?.userAccount }}</span>
+                  <span class="user-account">{{ loginUser?.userAccount }}</span>
+                </div>
+              </a-space>
+              <template #overlay>
+                <a-menu>
+                  <a-menu-item key="profile" @click="handleGoProfile">
+                    <span>个人信息</span>
+                  </a-menu-item>
+                  <a-menu-item key="account" disabled>
+                    <span>账号：{{ loginUser?.userAccount }}</span>
+                  </a-menu-item>
+                  <a-menu-divider />
+                  <a-menu-item key="logout" @click="handleLogout">退出登录</a-menu-item>
+                </a-menu>
+              </template>
+            </a-dropdown>
+          </a-space>
+        </template>
+        <template v-else>
+          <a-space :size="12">
+            <a-button type="link" class="ghost-button" @click="handleGoLogin">登录</a-button>
+            <a-button type="primary" shape="round" @click="handleGoRegister">免费注册</a-button>
+          </a-space>
+        </template>
+      </div>
+    </div>
   </a-layout-header>
 </template>
 
 <script setup lang="ts">
-import { h, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, h, onMounted, ref, watch } from 'vue'
+import { storeToRefs } from 'pinia'
+import { message } from 'ant-design-vue'
 import type { MenuProps } from 'ant-design-vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useLoginUserStore } from '@/stores/LoginUser'
+import { userLogout } from '@/api/userController'
 
 const router = useRouter()
-// 当前选中菜单
-const selectedKeys = ref<string[]>(['/'])
-// 监听路由变化，更新当前选中菜单
-router.afterEach((to, from, next) => {
-  selectedKeys.value = [to.path]
+const route = useRoute()
+const loginUserStore = useLoginUserStore()
+const { loginUser, isLoggedIn, isAdmin } = storeToRefs(loginUserStore)
+
+const selectedKeys = ref<string[]>([route.path])
+
+onMounted(() => {
+  loginUserStore.fetchLoginUser()
 })
 
-// 菜单配置项
-const menuItems = ref([
-  {
-    key: '/',
-    label: '首页',
-    title: '首页',
-  },
-  {
-    key: '/about',
-    label: '关于',
-    title: '关于我们',
-  },
-  {
-    key: 'others',
-    label: h('a', { href: 'https://www.codefather.cn', target: '_blank' }, '编程导航'),
-    title: '编程导航',
-  },
-])
+const menuItems = computed<MenuProps['items']>(() => {
+  const items: NonNullable<MenuProps['items']> = [
+    {
+      key: '/',
+      label: '首页',
+    },
+    {
+      key: '/about',
+      label: '关于',
+    },
+    {
+      key: 'others',
+      label: h(
+        'a',
+        { href: 'https://www.codefather.cn', target: '_blank', rel: 'noopener noreferrer' },
+        '编程导航',
+      ),
+    },
+  ]
+  if (isAdmin.value) {
+    items.splice(1, 0, {
+      key: '/admin/users',
+      label: '用户管理',
+    })
+  }
+  return items
+})
 
-// 处理菜单点击
-const handleMenuClick: MenuProps['onClick'] = (e) => {
-  const key = e.key as string
-  selectedKeys.value = [key]
-  // 跳转到对应页面
-  if (key.startsWith('/')) {
-    router.push(key)
+const handleMenuClick: MenuProps['onClick'] = (info) => {
+  const targetKey = info.key as string
+  if (targetKey.startsWith('/')) {
+    selectedKeys.value = [targetKey]
+    router.push(targetKey)
   }
 }
+
+const handleGoLogin = () => {
+  router.push({ path: '/user/login', query: { redirect: route.fullPath } })
+}
+
+const handleGoRegister = () => {
+  router.push({ path: '/user/register', query: { redirect: route.fullPath } })
+}
+
+const handleGoProfile = () => {
+  router.push('/user/profile')
+}
+
+const handleLogout = async () => {
+  try {
+    const res = await userLogout()
+    if (res.data.code === 0) {
+      message.success('已退出登录')
+      loginUserStore.resetLoginUser()
+      router.replace('/user/login')
+      return
+    }
+    message.error(res.data.message || '退出失败，请稍后重试')
+  } catch (error) {
+    message.error('退出请求失败，请检查网络')
+  }
+}
+
+watch(
+  () => route.path,
+  (path) => {
+    selectedKeys.value = [path]
+  },
+  { immediate: true },
+)
 </script>
 
 <style scoped>
 .header {
-  background: #fff;
-  padding: 0 24px;
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(12px);
+  padding: 12px 48px;
+  box-shadow: 0 8px 24px rgba(24, 144, 255, 0.1);
 }
 
-.header-left {
+.header-inner {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
+  gap: 32px;
 }
 
-.logo {
-  height: 48px;
-  width: 48px;
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-decoration: none;
 }
 
-.site-title {
-  margin: 0;
-  font-size: 18px;
-  color: #1890ff;
+.brand-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
 }
 
-.ant-menu-horizontal {
-  border-bottom: none !important;
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.brand-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f1f1f;
+}
+
+.brand-subtitle {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.nav-menu {
+  flex: 1;
+  min-width: 320px;
+  background: transparent;
+  border-bottom: none;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.ghost-button {
+  color: #1677ff;
+}
+
+.user-entry {
+  cursor: pointer;
+}
+
+.user-avatar {
+  background: linear-gradient(135deg, #1677ff, #69b1ff);
+}
+
+.user-meta {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.user-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f1f1f;
+}
+
+.user-account {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+@media (max-width: 992px) {
+  .header {
+    padding: 12px 24px;
+  }
+
+  .header-inner {
+    gap: 16px;
+  }
+
+  .nav-menu {
+    display: none;
+  }
 }
 </style>

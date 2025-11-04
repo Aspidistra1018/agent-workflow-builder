@@ -8,6 +8,7 @@ import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.yupi.yuaicodemother.exception.BusinessException;
 import com.yupi.yuaicodemother.exception.ErrorCode;
 import com.yupi.yuaicodemother.model.dto.UserQueryRequest;
+import com.yupi.yuaicodemother.model.dto.UserUpdateRequest;
 import com.yupi.yuaicodemother.model.entity.User;
 import com.yupi.yuaicodemother.mapper.UserMapper;
 import com.yupi.yuaicodemother.model.enums.UserRoleEnum;
@@ -183,5 +184,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // 盐值，混淆密码
         final String SALT = "yupi";
         return DigestUtils.md5DigestAsHex((userPassword + SALT).getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Override
+    public void updateInfo(UserUpdateRequest userUpdateRequest) {
+        if (userUpdateRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数为空");
+        }
+        User user = new User();
+        BeanUtil.copyProperties(userUpdateRequest, user);
+        boolean result = this.updateById(user);
+        if (!result) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "更新失败");
+        }
     }
 }

@@ -1,19 +1,26 @@
 <template>
   <a-layout class="basic-layout">
-    <!-- 顶部导航栏 -->
-    <GlobalHeader />
-    <!-- 主要内容区域 -->
-    <a-layout-content class="main-content">
+    <GlobalHeader v-if="!isAuthPage" />
+    <a-layout-content :class="contentClass">
       <router-view />
     </a-layout-content>
-    <!-- 底部版权信息 -->
-    <GlobalFooter />
+    <GlobalFooter v-if="!isAuthPage" />
   </a-layout>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import GlobalHeader from '@/components/GlobalHeader.vue'
 import GlobalFooter from '@/components/GlobalFooter.vue'
+
+const route = useRoute()
+
+const isAuthPage = computed(() => Boolean(route.meta?.hideChrome))
+
+const contentClass = computed(() => ({
+  'main-content': !isAuthPage.value,
+}))
 </script>
 
 <style scoped>
